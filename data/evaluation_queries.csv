@@ -1,0 +1,6 @@
+query_id,query_text,category,expected_relevant_product_ids
+Q1,blue casual shirt,Shirts,7169;13410;39727;13417;26369;27884;11712;22350;12951;15145
+Q2,black trousers,Trousers,57136;10257;51605;29780;14695;10259
+Q3,white casual shoes,Casual Shoes,13073;32555;18665;24250;30233;3505;19311;26536;39988;22705
+Q4,red printed t-shirt,Tshirts,3953;13426;38601
+Q5,women silver watch,Watches,46480;59263;39375;44983;58942

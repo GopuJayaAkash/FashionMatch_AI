@@ -1,0 +1,6 @@
+Query ID,Query,Relevant Products,Precision@5,Precision@10,Recall@5,Recall@10,AP@10
+Q1,blue casual shirt,10,1.0,1.0,0.5,1.0,1.0
+Q2,black trousers,6,1.0,0.6,0.8333333333333334,1.0,1.0
+Q3,white casual shoes,10,1.0,1.0,0.5,1.0,1.0
+Q4,red printed t-shirt,3,0.6,0.3,1.0,1.0,0.5333333333333333
+Q5,women silver watch,5,0.8,0.5,0.8,1.0,0.835

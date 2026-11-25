@@ -1,0 +1,37 @@
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Streamlit configuration
+.streamlit/
+
+# Model downloads and caches
+models/
+.cache/
+
+# Generated FAISS index
+data/index/
+
+# Product image collections
+data/catalog/
+data/catalog_hq/
+
+# Original dataset files
+data/raw_dataset/
+data/styles.csv
+
+# Old dataset backup
+data/evaluation_queries_before_label_update.csv
+data/products_before_hq.csv
+
+# Local backup scripts and files
+app_day2_backup.py
+app_day3_backup.py
+search_baseline_day2_backup.py
+search_experimental_day2_backup.py
+evaluation_queries_day2_backup.csv
+

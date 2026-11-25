@@ -1,0 +1,6 @@
+Query ID,Query,Baseline Precision@5,Experimental Precision@5,Improvement Precision@5,Baseline Precision@10,Experimental Precision@10,Improvement Precision@10,Baseline Recall@5,Experimental Recall@5,Improvement Recall@5,Baseline Recall@10,Experimental Recall@10,Improvement Recall@10,Baseline AP@10,Experimental AP@10,Improvement AP@10
+Q1,blue casual shirt,1.0,1.0,0.0,1.0,1.0,0.0,0.5,0.5,0.0,1.0,1.0,0.0,1.0,1.0,0.0
+Q2,black trousers,1.0,1.0,0.0,0.6,0.6,0.0,0.8333333333333334,0.8333333333333334,0.0,1.0,1.0,0.0,1.0,1.0,0.0
+Q3,white casual shoes,1.0,1.0,0.0,1.0,1.0,0.0,0.5,0.5,0.0,1.0,1.0,0.0,1.0,1.0,0.0
+Q4,red printed t-shirt,0.6,0.6,0.0,0.3,0.3,0.0,1.0,1.0,0.0,1.0,1.0,0.0,0.5333333333333333,0.7555555555555555,0.2222222222222222
+Q5,women silver watch,0.8,1.0,0.19999999999999996,0.5,0.5,0.0,0.8,1.0,0.19999999999999996,1.0,1.0,0.0,0.835,1.0,0.16500000000000004

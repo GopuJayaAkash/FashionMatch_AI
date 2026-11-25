@@ -1,0 +1,31 @@
+query_id,query,metadata_boost,precision_at_5,precision_at_10
+Q1,blue casual shirt,0.06,1.0,1.0
+Q1,blue casual shirt,0.08,1.0,0.8
+Q1,blue casual shirt,0.1,1.0,0.8
+Q1,blue casual shirt,0.12,1.0,0.8
+Q1,blue casual shirt,0.15,1.0,0.8
+Q1,blue casual shirt,0.18,1.0,0.8
+Q2,black trousers,0.06,1.0,0.6
+Q2,black trousers,0.08,1.0,0.6
+Q2,black trousers,0.1,1.0,0.6
+Q2,black trousers,0.12,1.0,0.6
+Q2,black trousers,0.15,1.0,0.6
+Q2,black trousers,0.18,1.0,0.6
+Q3,white casual shoes,0.06,1.0,1.0
+Q3,white casual shoes,0.08,1.0,1.0
+Q3,white casual shoes,0.1,1.0,1.0
+Q3,white casual shoes,0.12,1.0,1.0
+Q3,white casual shoes,0.15,1.0,1.0
+Q3,white casual shoes,0.18,1.0,1.0
+Q4,red printed t-shirt,0.06,0.6,0.3
+Q4,red printed t-shirt,0.08,0.6,0.3
+Q4,red printed t-shirt,0.1,0.6,0.3
+Q4,red printed t-shirt,0.12,0.6,0.3
+Q4,red printed t-shirt,0.15,0.6,0.3
+Q4,red printed t-shirt,0.18,0.6,0.3
+Q5,women silver watch,0.06,0.8,0.5
+Q5,women silver watch,0.08,0.8,0.5
+Q5,women silver watch,0.1,0.8,0.5
+Q5,women silver watch,0.12,0.8,0.5
+Q5,women silver watch,0.15,0.8,0.5
+Q5,women silver watch,0.18,0.8,0.5
