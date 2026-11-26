@@ -16,6 +16,8 @@ from fashionmatch.search_experimental import (
 )
 
 from fashionmatch.query_generator import generate_search_description
+from fashionmatch.llm_assistant import chat_with_fashion_assistant
+from fashionmatch.llm_explainer import explain_product_recommendation
 from fashionmatch.config import INDEX_FILE
 
 
@@ -25,6 +27,7 @@ from fashionmatch.config import INDEX_FILE
 
 def safe_float(value, default=0.0):
     """Convert a value to a valid finite float."""
+
     try:
         number = float(value)
 
@@ -39,15 +42,71 @@ def safe_float(value, default=0.0):
 
 def safe_text(value, default="Not available"):
     """Safely display catalogue values."""
+
     if value is None:
         return default
 
     value = str(value).strip()
 
-    if not value or value.lower() == "nan":
+    if not value or value.lower() in ("nan", "none", "<na>"):
         return default
 
     return value
+
+
+def build_catalogue_context(results, limit=10):
+    """
+    Build factual context from retrieved catalogue products.
+
+    Only include scores that actually exist in the result.
+    This prevents baseline recommendations from being
+    incorrectly described as having an attribute score of zero.
+    """
+
+    if results is None or results.empty:
+        return ""
+
+    products = []
+
+    for _, row in results.head(limit).iterrows():
+
+        product_lines = [
+            f"Product ID: {safe_text(row.get('product_id'))}",
+            f"Name: {safe_text(row.get('name'))}",
+            f"Category: {safe_text(row.get('category'))}",
+            f"Colour: {safe_text(row.get('color'))}",
+            f"Price: {safe_text(row.get('price'))}",
+            f"Description: {safe_text(row.get('description'))}",
+            f"CLIP similarity: {safe_float(row.get('similarity')):.4f}",
+            f"Metadata score: {safe_float(row.get('metadata_score')):.4f}",
+        ]
+
+        # Include attribute score only when it exists.
+        attribute_score = safe_text(
+            row.get("attribute_score"),
+            default=""
+        )
+
+        if attribute_score:
+            product_lines.append(
+                f"Attribute score: {safe_float(attribute_score):.4f}"
+            )
+
+        product_lines.append(
+            f"Ranking score: {safe_float(row.get('ranking_score')):.4f}"
+        )
+
+        products.append("\n".join(product_lines))
+
+    return "\n\n".join(products)
+
+
+def get_ollama_model(model):
+    """Return the selected model or the default model."""
+
+    model = str(model).strip() if model else ""
+
+    return model or "llama3.2"
 
 
 # --------------------------------------------------
@@ -64,8 +123,22 @@ st.title("👗 FashionMatch AI")
 
 st.caption(
     "Multimodal fashion product discovery using CLIP embeddings, "
-    "metadata matching and attribute-aware ranking"
+    "FAISS retrieval, attribute-aware ranking and local LLM assistance"
 )
+
+
+# --------------------------------------------------
+# INITIALIZE SESSION STATE
+# --------------------------------------------------
+
+if "fashion_chat_history" not in st.session_state:
+    st.session_state["fashion_chat_history"] = []
+
+if "product_explanations" not in st.session_state:
+    st.session_state["product_explanations"] = {}
+
+if "comparison_answer" not in st.session_state:
+    st.session_state["comparison_answer"] = ""
 
 
 # --------------------------------------------------
@@ -73,6 +146,7 @@ st.caption(
 # --------------------------------------------------
 
 try:
+
     create_sample_catalog_template()
     catalog = load_catalog()
 
@@ -81,12 +155,13 @@ try:
         st.stop()
 
 except Exception as exc:
+
     st.error(f"Unable to load the product catalogue: {exc}")
     st.stop()
 
 
 # --------------------------------------------------
-# SIDEBAR SEARCH SETTINGS
+# SIDEBAR SETTINGS
 # --------------------------------------------------
 
 with st.sidebar:
@@ -141,22 +216,28 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("Optional LLM query enhancement")
+    st.subheader("Ollama AI settings")
 
     use_ollama = st.checkbox(
-        "Use local Ollama",
+        "Enhance search description using Ollama",
         value=False
     )
 
     ollama_model = st.text_input(
         "Ollama model",
-        value="llama3.2",
-        disabled=not use_ollama
+        value="llama3.2"
+    )
+
+    ollama_model = get_ollama_model(ollama_model)
+
+    st.caption(
+        "Ollama powers the conversational assistant, "
+        "AI explanations and product comparisons."
     )
 
     st.caption(
-        "If Ollama is unavailable, the original description "
-        "is used where supported by the query generator."
+        "Search enhancement is optional. "
+        "Other AI features can be used independently."
     )
 
 
@@ -181,6 +262,7 @@ with left:
     if uploaded is not None:
 
         try:
+
             query_image = Image.open(uploaded).convert("RGB")
 
             st.image(
@@ -197,6 +279,7 @@ with left:
             )
 
             st.error(image_error)
+
 
 with right:
 
@@ -226,9 +309,7 @@ if st.button(
     use_container_width=True
 ):
 
-    # CLEAR PREVIOUS SEARCH DATA BEFORE VALIDATION
-    # This prevents stale recommendations from appearing
-    # when the user submits an invalid search.
+    # Clear previous search results and explanations.
 
     for key in [
         "results",
@@ -241,7 +322,10 @@ if st.button(
 
         st.session_state.pop(key, None)
 
-    # INPUT VALIDATION
+    st.session_state["product_explanations"] = {}
+    st.session_state["comparison_answer"] = ""
+
+    # Input validation.
 
     if image_error and not description.strip():
 
@@ -282,7 +366,7 @@ if st.button(
                     else ""
                 )
 
-                # SELECT RANKING IMPLEMENTATION
+                # Select existing ranking implementation.
 
                 if ranking_method == "Experimental (Attribute-aware)":
 
@@ -292,7 +376,8 @@ if st.button(
 
                     selected_search_function = search_baseline
 
-                # PERFORM MULTIMODAL PRODUCT SEARCH
+                # Perform existing multimodal product search.
+                # Ranking formulas remain unchanged.
 
                 results = selected_search_function(
                     query_image=query_image,
@@ -308,7 +393,7 @@ if st.button(
                         "The search algorithm returned an invalid result."
                     )
 
-                # STORE NEW SEARCH RESULTS
+                # Store results.
 
                 st.session_state["results"] = results
 
@@ -403,11 +488,14 @@ if "results" in st.session_state:
 
         for i, (_, row) in enumerate(results.iterrows()):
 
+            product_id = safe_text(
+                row.get("product_id"),
+                default=f"unknown_{i}"
+            )
+
             with cols[i % 3]:
 
-                # ------------------------------------------
                 # PRODUCT IMAGE
-                # ------------------------------------------
 
                 image_value = safe_text(
                     row.get("image_path"),
@@ -445,19 +533,13 @@ if "results" in st.session_state:
                         "Product image unavailable."
                     )
 
-                # ------------------------------------------
                 # PRODUCT INFORMATION
-                # ------------------------------------------
 
                 product_name = safe_text(
                     row.get("name")
                 )
 
-                product_id = safe_text(
-                    row.get("product_id")
-                )
-
-                category = safe_text(
+                product_category = safe_text(
                     row.get("category")
                 )
 
@@ -468,12 +550,10 @@ if "results" in st.session_state:
                 st.markdown(f"**{product_name}**")
 
                 st.write(f"Product ID: {product_id}")
-                st.write(f"Category: {category}")
+                st.write(f"Category: {product_category}")
                 st.write(f"Colour: {color}")
 
-                # ------------------------------------------
                 # RECOMMENDATION SCORES
-                # ------------------------------------------
 
                 similarity = safe_float(
                     row.get("similarity")
@@ -533,9 +613,7 @@ if "results" in st.session_state:
                         "not probabilities or confidence values."
                     )
 
-                # ------------------------------------------
-                # RECOMMENDATION EXPLANATION
-                # ------------------------------------------
+                # ORIGINAL RECOMMENDATION EXPLANATION
 
                 with st.expander("Why was this product recommended?"):
 
@@ -568,32 +646,296 @@ if "results" in st.session_state:
                         "with metadata matching."
                     )
 
+                # AI-GENERATED RECOMMENDATION EXPLANATION
+
+                with st.expander("✨ Explain with AI"):
+
+                    explanation_key = f"{product_id}_{i}"
+
+                    if st.button(
+                        "Generate AI explanation",
+                        key=f"ai_explain_{product_id}_{i}",
+                        use_container_width=True
+                    ):
+
+                        with st.spinner(
+                            "Llama 3.2 is explaining this recommendation..."
+                        ):
+
+                            try:
+
+                                explanation = explain_product_recommendation(
+                                    product=row,
+                                    query=st.session_state.get(
+                                        "enhanced_query", ""
+                                    ),
+                                    ranking_method=active_method,
+                                    model=ollama_model
+                                )
+
+                                st.session_state[
+                                    "product_explanations"
+                                ][explanation_key] = explanation
+
+                            except Exception as exc:
+
+                                st.session_state[
+                                    "product_explanations"
+                                ][explanation_key] = (
+                                    f"Unable to generate the AI explanation: {exc}"
+                                )
+
+                    if explanation_key in st.session_state[
+                        "product_explanations"
+                    ]:
+
+                        st.write(
+                            st.session_state[
+                                "product_explanations"
+                            ][explanation_key]
+                        )
+
                 st.divider()
 
 
 # --------------------------------------------------
-# HOW THE SYSTEM WORKS
+# PRODUCT COMPARISON
 # --------------------------------------------------
 
-else:
+if (
+    "results" in st.session_state
+    and not st.session_state["results"].empty
+):
 
     st.divider()
 
-    st.subheader("How FashionMatch AI works")
+    st.subheader("4. AI Product Comparison")
 
-    st.markdown(
-        """
-        1. Product images and metadata are stored in the catalogue.
-        2. CLIP generates image and text embeddings.
-        3. FAISS retrieves visually and semantically similar products.
-        4. Metadata matching improves product relevance.
-        5. The selected ranking algorithm orders the recommendations.
-        """
+    st.write(
+        "Select products from your recommendations "
+        "to compare them using Llama 3.2."
     )
 
-    st.caption(
-        "FashionMatch AI is a multimodal fashion product "
-        "discovery prototype developed as an AI/ML project."
+    comparison_results = st.session_state["results"]
+
+    product_lookup = {}
+
+    for _, row in comparison_results.iterrows():
+
+        product_id = safe_text(row.get("product_id"))
+
+        product_lookup[product_id] = row
+
+    product_ids = list(product_lookup.keys())
+
+    selected_products = st.multiselect(
+        "Select products to compare",
+        options=product_ids,
+        format_func=lambda pid: (
+            f"{safe_text(product_lookup[pid].get('name'))} "
+            f"(ID: {pid})"
+        ),
+        max_selections=4,
+        key="comparison_product_selection"
     )
 
+    if st.button(
+        "⚖️ Compare selected products",
+        use_container_width=True
+    ):
 
+        if len(selected_products) < 2:
+
+            st.warning(
+                "Please select at least two products for comparison."
+            )
+
+        else:
+
+            selected_rows = comparison_results[
+                comparison_results["product_id"].astype(str).isin(
+                    selected_products
+                )
+            ]
+
+            comparison_context = build_catalogue_context(
+                selected_rows,
+                limit=4
+            )
+
+            comparison_prompt = (
+                "Compare the selected fashion products. "
+                "Discuss their differences in category, colour, "
+                "description, available price and recommendation scores. "
+                "Explain which product is more suitable for different "
+                "situations based only on the provided information. "
+                "Do not invent missing product details. "
+                "Do not recalculate or change the original ranking scores."
+            )
+
+            with st.spinner(
+                "Llama 3.2 is comparing the selected products..."
+            ):
+
+                try:
+
+                    comparison_answer = chat_with_fashion_assistant(
+                        user_message=comparison_prompt,
+                        catalogue_context=comparison_context,
+                        model=ollama_model
+                    )
+
+                    st.session_state["comparison_answer"] = (
+                        comparison_answer
+                    )
+
+                except Exception as exc:
+
+                    st.session_state["comparison_answer"] = (
+                        f"Unable to compare products: {exc}"
+                    )
+
+    if st.session_state.get("comparison_answer"):
+
+        st.markdown("### AI Comparison Result")
+
+        st.write(
+            st.session_state["comparison_answer"]
+        )
+
+
+# --------------------------------------------------
+# CONVERSATIONAL FASHION AI ASSISTANT
+# --------------------------------------------------
+
+st.divider()
+
+st.subheader("3. 💬 Fashion AI Assistant")
+
+st.write(
+    "Ask Llama 3.2 about fashion styling, outfit combinations, "
+    "occasions, colours or your recommended products."
+)
+
+# Prepare context from current recommendations, if available.
+
+current_catalogue_context = ""
+
+if (
+    "results" in st.session_state
+    and not st.session_state["results"].empty
+):
+
+    current_catalogue_context = build_catalogue_context(
+        st.session_state["results"],
+        limit=10
+    )
+
+# Display previous conversation.
+
+for message in st.session_state["fashion_chat_history"]:
+
+    with st.chat_message(message["role"]):
+
+        st.markdown(message["content"])
+
+# Chat input.
+
+user_message = st.chat_input(
+    "Ask FashionMatch AI something..."
+)
+
+if user_message:
+
+    # Display and store the new user message.
+
+    st.session_state["fashion_chat_history"].append({
+        "role": "user",
+        "content": user_message
+    })
+
+    with st.chat_message("user"):
+
+        st.markdown(user_message)
+
+    # Use previous conversation as context,
+    # excluding the current message.
+
+    conversation_history = (
+        st.session_state["fashion_chat_history"][:-1]
+    )
+
+    with st.chat_message("assistant"):
+
+        with st.spinner(
+            "Fashion AI is thinking..."
+        ):
+
+            try:
+
+                assistant_response = chat_with_fashion_assistant(
+                    user_message=user_message,
+                    conversation_history=conversation_history,
+                    catalogue_context=current_catalogue_context,
+                    model=ollama_model
+                )
+
+            except Exception as exc:
+
+                assistant_response = (
+                    f"Unable to contact Ollama: {exc}\n\n"
+                    "Please check that Ollama is running and "
+                    "the selected model is available."
+                )
+
+        st.markdown(assistant_response)
+
+    # Store assistant response.
+
+    st.session_state["fashion_chat_history"].append({
+        "role": "assistant",
+        "content": assistant_response
+    })
+
+    st.rerun()
+
+
+# Clear conversation history.
+
+if st.session_state["fashion_chat_history"]:
+
+    if st.button(
+        "🗑️ Clear chat history",
+        key="clear_fashion_chat"
+    ):
+
+        st.session_state["fashion_chat_history"] = []
+
+        st.rerun()
+
+
+# --------------------------------------------------
+# HOW THE SYSTEM WORKS
+# This section is now ALWAYS visible.
+# --------------------------------------------------
+
+st.divider()
+
+st.subheader("How FashionMatch AI works")
+
+st.markdown(
+    """
+    1. Product images and metadata are stored in the catalogue.
+    2. CLIP generates image and text embeddings.
+    3. FAISS retrieves visually and semantically similar products.
+    4. Metadata and attribute matching improve product relevance.
+    5. The selected ranking algorithm orders the recommendations.
+    6. Ollama with Llama 3.2 provides conversational assistance,
+       AI-powered recommendation explanations and product comparisons.
+    """
+)
+
+st.caption(
+    "FashionMatch AI is a multimodal fashion product "
+    "discovery prototype developed as an AI/ML project."
+)

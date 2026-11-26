@@ -1,770 +1,416 @@
-\# FashionMatch AI
+# 👗 FashionMatch AI – Multimodal Fashion Product Recommendation System
 
+An AI-powered fashion product discovery and recommendation system that combines **multimodal search, computer vision, vector similarity retrieval, attribute-aware ranking, and Large Language Model (LLM) assistance**.
 
+FashionMatch AI allows users to search for fashion products using images, text descriptions, or both. It retrieves visually and semantically relevant products and provides AI-generated explanations, product comparisons, and conversational fashion assistance.
 
-\## Multimodal Fashion Product Recommendation Using CLIP and FAISS
+---
 
+## 🚀 Key Features
 
+### 1. Multimodal Fashion Search
+- Search using a fashion image.
+- Search using a natural-language description.
+- Combine image and text inputs.
+- Retrieve visually and semantically similar products.
 
-FashionMatch AI is an AI-powered fashion product discovery system that recommends visually and semantically similar fashion products using image and text queries.
+### 2. CLIP-Based Feature Extraction
+- Uses `openai/clip-vit-base-patch32`.
+- Generates image and text embeddings.
+- Maps images and text into a shared embedding space.
+- Enables cross-modal similarity comparison.
 
+### 3. FAISS-Based Product Retrieval
+- Uses FAISS `IndexFlatIP`.
+- Performs vector similarity retrieval.
+- Uses normalized embeddings and inner-product similarity.
+- Retrieves relevant products efficiently.
 
+### 4. Hybrid Recommendation and Ranking
 
-The project combines CLIP-based multimodal embeddings, FAISS vector retrieval, metadata matching, and an experimental attribute-aware ranking method. A Streamlit interface allows users to search using an uploaded image, a text description, or both.
+FashionMatch AI implements two recommendation approaches:
 
+**Baseline Ranking**
+- CLIP visual and semantic similarity.
+- Metadata matching.
 
+Ranking formula:
 
-This project is an M.Tech-level experimental implementation focused on multimodal retrieval and recommendation ranking.
+`Ranking Score = CLIP Similarity + 0.06 × Metadata Score`
 
+**Experimental Attribute-Aware Ranking**
+- CLIP similarity.
+- Product attribute matching.
+- Colour, category, gender-related information, and design attributes.
 
+Ranking formula:
 
-\## 1. Problem Statement
+`Ranking Score = CLIP Similarity + 0.12 × Attribute Score`
 
+The experimental approach improves the ranking of products based on relevant fashion attributes.
 
+### 5. Ollama and Llama 3.2 Integration
 
-Traditional fashion product search systems often depend on exact keywords, predefined categories, or manually selected filters. These approaches may fail to identify visually similar products when users describe an item using natural language or provide a reference image.
+The application integrates a locally running LLM through Ollama.
 
+Features include:
 
+- **AI Search Enhancement:** Rewrites fashion descriptions into more detailed product-search queries.
+- **AI Recommendation Explanation:** Explains why a product was recommended using its catalogue information and ranking signals.
+- **AI Product Comparison:** Compares selected products based on available product details and recommendation scores.
+- **Conversational Fashion AI Assistant:** Answers fashion-related questions and supports follow-up conversations.
 
-FashionMatch AI addresses this problem through multimodal search. It uses CLIP to represent images and text in a shared embedding space and FAISS to retrieve visually and semantically similar products.
+The LLM operates alongside the retrieval system. It does not replace CLIP, FAISS, or the existing ranking algorithms.
 
+### 6. Interactive Streamlit Interface
+- Image upload and text search.
+- Product category filtering.
+- Adjustable number of recommendations.
+- Baseline and experimental ranking selection.
+- Recommendation score visualization.
+- AI-generated explanations.
+- Product comparison.
+- Conversational fashion assistant.
 
+---
 
-The system further improves recommendation ordering through metadata-aware and attribute-aware ranking.
+## 🛠️ Technology Stack
 
-
-
-\## 2. Objectives
-
-
-
-\- Develop an image-based fashion product search system.
-
-\- Support natural-language text-based product search.
-
-\- Enable combined image and text queries.
-
-\- Use CLIP embeddings for multimodal similarity.
-
-\- Use FAISS for efficient vector retrieval.
-
-\- Improve ranking using product metadata and extracted attributes.
-
-\- Compare baseline and experimental ranking methods.
-
-\- Evaluate recommendation quality using Precision@K, Recall@K, and Average Precision.
-
-
-
-\## 3. Technologies Used
-
-
-
-| Technology | Purpose |
-
+| Component | Technology |
 |---|---|
+| Programming Language | Python |
+| User Interface | Streamlit |
+| Computer Vision | CLIP |
+| Pretrained Model | openai/clip-vit-base-patch32 |
+| Deep Learning | PyTorch |
+| Model Processing | Hugging Face Transformers |
+| Vector Search | FAISS |
+| Data Processing | Pandas, NumPy |
+| Image Processing | Pillow |
+| LLM Runtime | Ollama |
+| Language Model | Llama 3.2 |
+| Version Control | Git and GitHub |
 
-| Python | Core programming language |
+---
 
-| PyTorch | Deep learning framework |
-
-| CLIP | Image and text feature extraction |
-
-| Hugging Face Transformers | Loading the pretrained CLIP model |
-
-| FAISS | Vector similarity search |
-
-| NumPy | Numerical operations |
-
-| Pandas | Catalogue and evaluation data processing |
-
-| Streamlit | Interactive web application |
-
-| Pillow | Image loading and processing |
-
-| Scikit-learn | Supporting machine learning utilities |
-
-
-
-\*\*Pretrained model:\*\* `openai/clip-vit-base-patch32`
-
-
-
-\## 4. Dataset
-
-
-
-The project uses the Fashion Products Small dataset, with a working catalogue of approximately 1,500 products.
-
-
-
-The catalogue contains product images and associated metadata, including product names, categories, and colors.
-
-
-
-The product image collection is maintained locally under the project's data directory.
-
-
-
-\*\*Note:\*\* Reliable product prices are not available for the current catalogue. Therefore, price-based filtering is not included in the final application.
-
-
-
-\## 5. Project Structure
-
-
+## 🧠 System Architecture
 
 ```text
-
-FashionMatch\_AI/
-
-|
-
-|-- app.py
-
-|-- requirements.txt
-
-|-- README.md
-
-|-- .gitignore
-
-|
-
-|-- fashionmatch/
-
-|   |-- \_\_init\_\_.py
-
-|   |-- config.py
-
-|   |-- catalog.py
-
-|   |-- clip\_engine.py
-
-|   |-- indexer.py
-
-|   |-- query\_generator.py
-
-|   |-- search.py
-
-|   |-- search\_baseline.py
-
-|   |-- search\_experimental.py
-
-|
-
-|-- data/
-
-|   |-- products.csv
-
-|   |-- evaluation\_queries.csv
-
-|   |-- evaluation\_results.csv
-
-|   |-- evaluation\_results\_experimental.csv
-
-|   |-- final\_ranking\_comparison.csv
-
-|   |-- final\_metrics\_summary.csv
-
-|
-
-|-- scripts/
-
-|   |-- prepare\_dataset.py
-
-|   |-- build\_index.py
-
-|   |-- evaluate\_recommendations.py
-
-|   |-- evaluate\_experimental.py
-
-|   |-- create\_final\_comparison.py
-
-|   |-- update\_evaluation\_labels.py
-
-|   |-- tune\_metadata\_boost.py
-
-|   |-- tune\_attribute\_boost.py
-
-|   |-- compare\_ranking\_versions.py
-
-|   |-- inspect\_top10.py
-
-|   |-- inspect\_q4\_attributes.py
-
-|   |-- upgrade\_images.py
-
-|   |-- fix\_missing\_images.py
-
-|
-
-|-- models/
-
-|
-
-|-- .venv/
-
+                  USER INPUT
+                      |
+          +-----------+-----------+
+          |                       |
+      Fashion Image          Text Description
+          |                       |
+          v                       v
+       CLIP Image             CLIP Text
+       Encoder                Encoder
+          |                       |
+          +-----------+-----------+
+                      |
+              Shared Embedding
+                   Space
+                      |
+                      v
+                FAISS Retrieval
+                      |
+                      v
+             Candidate Products
+                      |
+             +--------+--------+
+             |                 |
+             v                 v
+       Baseline Ranking   Experimental Ranking
+       CLIP + Metadata    Attribute-Aware
+             |                 |
+             +--------+--------+
+                      |
+                      v
+             Recommended Products
+                      |
+                      v
+              Streamlit Interface
+                      |
+                      v
+                Ollama LLM
+                 Llama 3.2
+                      |
+          +-----------+-----------+
+          |           |           |
+          v           v           v
+       AI Search   Explanation  Comparison
+       Enhancement              and Chat
 ```
 
+---
 
-
-The catalogue images and generated vector index are stored locally and are not necessarily included when sharing the source code.
-
-
-
-\## 6. System Architecture
-
-
-
-The system consists of the following main stages:
-
-
-
-1\. \*\*Input:\*\* The user uploads an image, enters a text description, or provides both.
-
-2\. \*\*Feature extraction:\*\* CLIP converts the available image and text inputs into embeddings.
-
-3\. \*\*Vector retrieval:\*\* FAISS retrieves candidate products using similarity search.
-
-4\. \*\*Metadata matching:\*\* Product metadata is compared with the search description.
-
-5\. \*\*Attribute-aware ranking:\*\* The experimental method additionally evaluates extracted product attributes.
-
-6\. \*\*Recommendation:\*\* Products are ranked and displayed in the Streamlit interface.
-
-
-
-\### Architecture Flow
-
-
+## 📁 Project Structure
 
 ```text
-
-&#x20;      User Input
-
-&#x20;  (Image / Text / Both)
-
-&#x20;           |
-
-&#x20;           v
-
-&#x20;    CLIP Feature Extraction
-
-&#x20;           |
-
-&#x20;           v
-
-&#x20;     FAISS Retrieval
-
-&#x20;           |
-
-&#x20;           v
-
-&#x20;   Candidate Product Results
-
-&#x20;           |
-
-&#x20;           v
-
-&#x20;      Ranking Module
-
-&#x20;       /          \\
-
-&#x20;      /            \\
-
-&#x20;Baseline       Experimental
-
-&#x20;CLIP +         Attribute-aware
-
-&#x20;Metadata       Ranking
-
-&#x20;      \\            /
-
-&#x20;       \\          /
-
-&#x20;           v
-
-&#x20;    Ranked Recommendations
-
-&#x20;           |
-
-&#x20;           v
-
-&#x20;      Streamlit UI
-
+FashionMatch_AI/
+│
+├── app.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+├── fashionmatch/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── catalog.py
+│   ├── clip_engine.py
+│   ├── indexer.py
+│   ├── query_generator.py
+│   ├── search.py
+│   ├── search_baseline.py
+│   ├── search_experimental.py
+│   ├── llm_assistant.py
+│   └── llm_explainer.py
+│
+├── scripts/
+│   ├── build_index.py
+│   ├── compare_ranking_versions.py
+│   ├── create_final_comparison.py
+│   ├── evaluate_experimental.py
+│   ├── evaluate_recommendations.py
+│   ├── fix_missing_images.py
+│   ├── inspect_q4_attributes.py
+│   ├── inspect_top10.py
+│   ├── prepare_dataset.py
+│   ├── tune_attribute_boost.py
+│   ├── tune_metadata_boost.py
+│   ├── update_evaluation_labels.py
+│   └── upgrade_images.py
+│
+├── data/
+│   ├── products.csv
+│   ├── evaluation_queries.csv
+│   ├── evaluation_results.csv
+│   ├── evaluation_results_experimental.csv
+│   ├── final_metrics_summary.csv
+│   ├── final_ranking_comparison.csv
+│   └── ranking_version_comparison.csv
+│
+└── screenshots/
+    ├── baseline ranking.png
+    ├── experimental ranking.png
+    ├── home page.png
+    ├── recommendation explanation.png
+    └── red printed t-shirt.png
 ```
 
+Generated model files, virtual environments, product image collections, and FAISS index files are maintained locally and excluded from Git where configured in `.gitignore`.
 
+---
 
-\## 7. Ranking Methods
+## ⚙️ Installation and Setup
 
+### 1. Clone the Repository
 
+```powershell
+git clone https://github.com/GopuJayaAkash/FashionMatch_AI.git
 
-The project implements two ranking methods to compare recommendation quality.
-
-
-
-\### 7.1 Baseline: CLIP + Metadata Ranking
-
-
-
-The baseline method combines CLIP similarity with metadata matching.
-
-
-
-\*\*Ranking formula:\*\*
-
-
-
-```text
-
-Baseline Score =
-
-CLIP Similarity + (0.06 x Metadata Score)
-
+cd FashionMatch_AI
 ```
 
+### 2. Create a Virtual Environment
 
-
-The metadata score provides an additional ranking boost when product information matches the user's query.
-
-
-
-The selected metadata boost is 0.06, based on the project's parameter-tuning experiments.
-
-
-
-Implementation: `fashionmatch/search.py`
-
-
-
-\### 7.2 Experimental: Attribute-Aware Ranking
-
-
-
-The experimental method combines CLIP similarity with an attribute matching score.
-
-
-
-It considers product attributes such as:
-
-
-
-\- Color
-
-\- Product category
-
-\- Gender-related information
-
-\- Design or pattern
-
-
-
-Design matching uses graded similarity between related design descriptions rather than requiring exact keyword matches.
-
-
-
-\*\*Ranking formula:\*\*
-
-
-
-```text
-
-Experimental Score =
-
-CLIP Similarity + (0.12 x Attribute Score)
-
+```powershell
+python -m venv .venv
 ```
 
+### 3. Activate the Virtual Environment
 
+For Windows PowerShell:
 
-The selected attribute boost is 0.12, based on the project's tuning experiments.
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
+### 4. Install Python Dependencies
 
+```powershell
+python -m pip install -r requirements.txt
+```
 
-Implementation: `fashionmatch/search\_experimental.py`
+### 5. Install Ollama
 
+Install Ollama from:
 
+https://ollama.com/
 
-\### 7.3 Ranking Comparison
+Download the Llama 3.2 model:
 
+```powershell
+ollama pull llama3.2
+```
 
+Verify the installed model:
 
-The application allows the user to select either:
+```powershell
+ollama list
+```
 
+Test the model:
 
+```powershell
+ollama run llama3.2
+```
 
-\- Experimental (Attribute-aware)
+Ollama must be running locally for the LLM features to work.
 
-\- Baseline (CLIP + Metadata)
+### 6. Prepare the Dataset and Build the Search Index
 
+Prepare the product catalogue and image data according to the project dataset setup.
 
+Run:
 
-This makes it possible to compare the recommendations generated by both approaches using the same search input.
+```powershell
+python scripts\prepare_dataset.py
+```
 
+Build the FAISS index:
 
+```powershell
+python scripts\build_index.py
+```
 
-\## 8. Evaluation Methodology
+The index is generated locally and used by the application for product retrieval.
 
+### 7. Run FashionMatch AI
 
+From the project root:
 
-The system was evaluated using five manually labelled search queries:
+```powershell
+streamlit run app.py
+```
 
+The application will open in your browser.
 
+---
 
-| Query ID | Search Query | Category |
+## 🔍 How the Recommendation System Works
 
-|---|---|---|
+### Step 1: User Input
 
-| Q1 | Blue casual shirt | Shirts |
+The user uploads an image, enters a fashion description, or supplies both.
 
-| Q2 | Black trousers | Trousers |
+### Step 2: Embedding Generation
 
-| Q3 | White casual shoes | Casual Shoes |
+CLIP converts the image and/or text into embeddings in a shared vector space.
 
-| Q4 | Red printed T-shirt | T-shirts |
+### Step 3: Similarity Retrieval
 
-| Q5 | Women silver watch | Watches |
+FAISS retrieves candidate products using vector similarity.
 
+For normalized embeddings, inner-product similarity corresponds to cosine similarity.
 
+### Step 4: Product Ranking
 
-The evaluation uses manually assigned relevant product IDs based on catalogue information and relevance judgments.
+The retrieved products are ranked using either the baseline or experimental approach.
 
+### Step 5: Recommendation Display
 
+The Streamlit application displays the recommended products and their ranking signals.
 
-The following metrics are calculated:
+### Step 6: LLM Assistance
 
+Ollama with Llama 3.2 provides natural-language search enhancement, explanations, comparisons, and conversational fashion advice.
 
+---
 
-\- \*\*Precision@5:\*\* Proportion of relevant products among the top five recommendations.
+## 📊 Evaluation and Results
 
-\- \*\*Precision@10:\*\* Proportion of relevant products among the top ten recommendations.
+The recommendation algorithms were evaluated using five fashion search queries:
 
-\- \*\*Recall@5:\*\* Proportion of labelled relevant products retrieved in the top five.
+1. Blue casual shirt.
+2. Black trousers.
+3. White casual shoes.
+4. Red printed T-shirt.
+5. Women silver watch.
 
-\- \*\*Recall@10:\*\* Proportion of labelled relevant products retrieved in the top ten.
-
-\- \*\*AP@10:\*\* Average precision of the ranked results up to position ten.
-
-\- \*\*MAP@10:\*\* Mean Average Precision across the five evaluation queries.
-
-
-
-\## 9. Experimental Results
-
-
-
-The following results were obtained from the current evaluation dataset.
-
-
+### Baseline vs Experimental Results
 
 | Evaluation Metric | Baseline | Experimental |
-
 |---|---:|---:|
-
 | Mean Precision@5 | 88.00% | 92.00% |
-
 | Mean Precision@10 | 68.00% | 68.00% |
-
 | Mean Recall@5 | 72.67% | 76.67% |
-
 | Mean Recall@10 | 100.00% | 100.00% |
-
 | MAP@10 | 87.37% | 95.11% |
 
+### Observations
 
+- Experimental ranking improves Mean Precision@5 by 4 percentage points.
+- Mean Recall@5 improves by 4 percentage points.
+- MAP@10 improves by 7.74 percentage points.
+- Both approaches achieve the same Mean Precision@10 and Mean Recall@10 in the evaluated set.
 
-\### Observations
+These results are based on five evaluation queries and manually assigned relevance labels. They should not be interpreted as a guarantee of performance on all fashion searches.
 
+**Note:** CLIP similarity, metadata matching, attribute matching, and combined ranking scores are ranking signals, not probabilities or confidence values.
 
+---
 
-1\. The experimental method improves Mean Precision@5 from 88% to 92%.
+## 🧪 Testing
 
-2\. Mean Recall@5 increases from 72.67% to 76.67%.
+The following application features have been tested:
 
-3\. Mean Precision@10 remains unchanged at 68%.
+| Test | Result |
+|---|---|
+| Text-based product search | Successful |
+| Image-based product search | Successful |
+| Combined image and text search | Successful |
+| Category filtering | Successful |
+| Top-K recommendation selection | Successful |
+| Baseline ranking | Successful |
+| Experimental ranking | Successful |
+| Recommendation explanations | Successful |
+| AI search enhancement | Successful |
+| AI product comparison | Successful |
+| Conversational fashion assistant | Successful |
+| Follow-up conversation context | Successful |
+| Ranking evaluation after LLM integration | Successful |
 
-4\. Recall@10 is 100% for both methods on the current manually labelled queries.
+---
 
-5\. MAP@10 improves from 87.37% to 95.11%.
+## ⚠️ Limitations
 
+- Recommendation quality depends on the coverage and quality of the product catalogue.
+- Missing product metadata can limit attribute matching.
+- Product prices may be unavailable for some catalogue entries.
+- Evaluation uses a limited set of five manually labelled queries.
+- Llama 3.2 generates natural-language responses and may occasionally produce inaccurate fashion advice.
+- Local LLM performance depends on available system resources.
+- The project is a research and academic prototype rather than a production shopping platform.
 
+---
 
-These results indicate that attribute-aware ranking improves the ordering of relevant recommendations in the current evaluation set.
+## 🔮 Future Enhancements
 
+- Expand the fashion product catalogue.
+- Improve attribute extraction and classification.
+- Introduce additional ranking strategies.
+- Extend evaluation to a larger and more diverse query set.
+- Add personalized recommendations based on user preferences.
+- Improve conversational context management.
+- Explore larger or specialized fashion language models.
+- Add more advanced multimodal recommendation capabilities.
 
+---
 
-\*\*Evaluation limitation:\*\* The experiment uses five manually labelled queries. The relevance labels are based on catalogue metadata and relevance judgments, not an independent large-scale human evaluation of every product image. Therefore, the results are preliminary and should not be interpreted as proof of general superiority across all fashion categories.
+## 👨‍💻 Author
 
+**Gopu Jaya Akash**
 
+M.Tech – KITS Institute of Technology
 
-\## 10. Streamlit Application Features
+Academic Year: 2025–2026
 
+---
 
+## 📄 Project Information
 
-The application provides the following features:
+FashionMatch AI is an academic AI/ML project developed to explore multimodal retrieval, computer vision, vector similarity search, attribute-aware recommendation algorithms, and local LLM integration.
 
-
-
-\- Image-only product search.
-
-\- Text-only product search.
-
-\- Combined image and text search.
-
-\- Category filtering.
-
-\- Adjustable Top-K recommendation count.
-
-\- Baseline and experimental ranking selection.
-
-\- Product image display.
-
-\- CLIP similarity scores.
-
-\- Metadata matching scores.
-
-\- Attribute matching scores.
-
-\- Combined ranking scores.
-
-\- CLIP similarity progress visualization.
-
-\- Explanations describing why a product was recommended.
-
-\- Input validation and error handling.
-
-
-
-Similarity and ranking scores are retrieval signals. They are not calibrated probabilities or confidence values.
-
-
-
-\## 11. Installation and Execution
-
-
-
-\### Prerequisites
-
-
-
-\- Python 3.10 or 3.11 recommended.
-
-\- Internet connection for the first download of the pretrained CLIP model.
-
-\- Sufficient memory and storage for the catalogue and model files.
-
-
-
-\### Step 1: Clone or extract the project
-
-
-
-Open PowerShell in the project directory.
-
-
-
-\### Step 2: Create a virtual environment
-
-
-
-```powershell
-
-python -m venv .venv
-
-```
-
-
-
-\### Step 3: Activate the environment
-
-
-
-```powershell
-
-.venv\\Scripts\\Activate.ps1
-
-```
-
-
-
-\### Step 4: Install dependencies
-
-
-
-```powershell
-
-python -m pip install --upgrade pip
-
-pip install -r requirements.txt
-
-```
-
-
-
-\### Step 5: Prepare the dataset (first-time setup only)
-
-
-
-If you are starting with the original dataset files, prepare the catalogue using:
-
-
-
-```powershell
-
-python scripts\\prepare\_dataset.py
-
-```
-
-
-
-Use the dataset files and options expected by the script. If the prepared catalogue is already available, do not repeat this step.
-
-
-
-\### Step 6: Build the FAISS index (first-time setup or after catalogue changes)
-
-
-
-```powershell
-
-python scripts\\build\_index.py
-
-```
-
-
-
-\### Step 7: Run the application
-
-
-
-```powershell
-
-streamlit run app.py
-
-```
-
-
-
-Streamlit will display a local URL. Open that URL in your browser to use FashionMatch AI.
-
-
-
-\## 12. Running the Evaluation
-
-
-
-Run the baseline evaluation:
-
-
-
-```powershell
-
-python scripts\\evaluate\_recommendations.py
-
-```
-
-
-
-Run the experimental evaluation:
-
-
-
-```powershell
-
-python scripts\\evaluate\_experimental.py
-
-```
-
-
-
-Generate the final comparison:
-
-
-
-```powershell
-
-python scripts\\create\_final\_comparison.py
-
-```
-
-
-
-The evaluation outputs are saved in the `data/` directory.
-
-
-
-\## 13. Limitations
-
-
-
-\- The current evaluation uses only five manually labelled search queries.
-
-\- The relevance labels are not based on a large independent human evaluation.
-
-\- Catalogue metadata quality can affect attribute matching.
-
-\- CLIP similarity may not always distinguish fine-grained clothing attributes.
-
-\- The current system does not implement a dedicated fashion object detector or clothing segmentation model.
-
-\- The system does not perform purchases or connect to live retailer inventory.
-
-\- Product prices are unavailable in the current catalogue.
-
-
-
-\## 14. Future Enhancements
-
-
-
-\- Expand the evaluation dataset with more queries and independently reviewed relevance labels.
-
-\- Add human evaluation of recommendation quality.
-
-\- Improve fine-grained attribute extraction.
-
-\- Integrate clothing detection and segmentation.
-
-\- Explore advanced multimodal reranking models.
-
-\- Improve retrieval efficiency for larger catalogues.
-
-\- Add user feedback and personalized recommendations.
-
-\- Evaluate latency and scalability with larger product collections.
-
-
-
-\## 15. Conclusion
-
-
-
-FashionMatch AI demonstrates a multimodal fashion product retrieval and recommendation system using CLIP and FAISS.
-
-
-
-The application supports image-based, text-based, and combined image-text searches. Two ranking methods were implemented and compared: a baseline CLIP-plus-metadata method and an experimental attribute-aware method.
-
-
-
-On the current five-query evaluation set, the experimental method achieved 92% Mean Precision@5 and 95.11% MAP@10, compared with 88% Mean Precision@5 and 87.37% MAP@10 for the baseline.
-
-
-
-The results provide preliminary evidence that incorporating product attributes can improve the ordering of fashion recommendations. Further evaluation using a larger and independently reviewed dataset is required to establish generalization.
-
-
-
-\---
-
-
-
-\*\*Project:\*\* FashionMatch AI  
-
-\*\*Domain:\*\* Artificial Intelligence and Machine Learning  
-
-\*\*Application:\*\* Multimodal Fashion Product Search and Recommendation  
-
-\*\*Interface:\*\* Streamlit
-
+**Repository:** https://github.com/GopuJayaAkash/FashionMatch_AI
